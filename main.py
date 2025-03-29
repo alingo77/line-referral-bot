@@ -32,9 +32,13 @@ except Exception as e:
 
 # ====== Webhook 接收 ======
 @app.route("/callback", methods=['POST'])
+
 def callback():
     signature = request.headers.get('X-Line-Signature')
     body = request.get_data(as_text=True)
+
+    print("[Webhook] Signature:", signature)
+    print("[Webhook] Body:", body)
 
     try:
         handler.handle(body, signature)
@@ -43,6 +47,7 @@ def callback():
         abort(400)
 
     return 'OK', 200
+
 
 # ====== 處理訊息事件 ======
 @handler.add(MessageEvent, message=TextMessage)
