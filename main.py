@@ -19,6 +19,8 @@ app = Flask(__name__)
 line_bot_api = LineBotApi(LINE_CHANNEL_ACCESS_TOKEN)
 handler = WebhookHandler(LINE_CHANNEL_SECRET)
 
+print("🚀 程式已啟動，這是最新版本")
+
 # ====== Firebase 初始化 ======
 try:
     firebase_key_dict = json.loads(firebase_key_json)
