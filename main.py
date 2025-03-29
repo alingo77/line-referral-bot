@@ -1,40 +1,12 @@
-# main.py
-from flask import Flask, request, abort
-from linebot import LineBotApi, WebhookHandler
-from linebot.models import MessageEvent, TextMessage, TextSendMessage
-import firebase_admin
-from firebase_admin import credentials, db
-import datetime
-import os
-import json
-
-# 從環境變數讀取 LINE Token 和 Secret
-LINE_CHANNEL_ACCESS_TOKEN = os.getenv("LINE_CHANNEL_ACCESS_TOKEN")
-LINE_CHANNEL_SECRET = os.getenv("LINE_CHANNEL_SECRET")
-
-# 從環境變數讀取 Firebase JSON（整份當字串貼進 Railway）
-firebase_key_json = os.getenv("FIREBASE_KEY_JSON")
-firebase_key_dict = json.loads(firebase_key_json)
-
-# Firebase 初始化
-cred = credentials.Certificate(firebase_key_dict)
-firebase_admin.initialize_app(cred, {
-    'databaseURL': 'https://line-referral-bot-default-rtdb.asia-southeast1.firebasedatabase.app/'  # 改為你自己的 Firebase DB URL
-})
-
-# LINE Bot 初始化
-app = Flask(__name__)
-line_bot_api = LineBotApi(LINE_CHANNEL_ACCESS_TOKEN)
-handler = WebhookHandler(LINE_CHANNEL_SECRET)
-
 @app.route("/callback", methods=['POST'])
 def callback():
-    signature = request.headers['X-Line-Signature']
+    signature = request.headers.get('X-Line-Signature')
     body = request.get_data(as_text=True)
 
     try:
         handler.handle(body, signature)
-    except:
+    except Exception as e:
+        print("[Webhook ERROR]", e)
         abort(400)
     return 'OK'
 
@@ -61,21 +33,14 @@ def handle_message(event):
                 })
                 reply = f"✅ 成功綁定下線 UID：{downline_uid}"
 
-        except:
+        except Exception as e:
+            print("[綁定錯誤]", e)
             reply = "⚠️ 格式錯誤，請使用：/綁定 12345678"
 
-        line_bot_api.reply_message(
-            event.reply_token,
-            TextSendMessage(reply)
-        )
-
-# 🔒 合夥人 LINE ID 模擬對照表（之後可改用資料庫）
-def get_inviter_uid_by_line_id(line_id):
-    mock_mapping = {
-        "Uxxx1": "A123456",
-        "Uxxx2": "B999999"
-    }
-    return mock_mapping.get(line_id)
-
-if __name__ == "__main__":
-    app.run()
+        try:
+            line_bot_api.reply_message(
+                event.reply_token,
+                TextSendMessage(reply)
+            )
+        except Exception as e:
+            print("[Reply ERROR]", e)
